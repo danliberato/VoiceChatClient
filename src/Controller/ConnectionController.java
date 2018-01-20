@@ -34,13 +34,14 @@ public class ConnectionController {
     private InputStream inputStream;
     private InputStreamReader inputStreamReader;
     private BufferedReader bufferedReader;
-    private String userName;
-    private String serverIp;
-    private Integer serverPort;
-    private String serverRoom;
-    private String serverPass;
+    private final String userName;
+    private final String serverIp;
+    private final Integer serverPort;
+    private final String serverRoom;
+    private final String serverPass;
     public final int BUFFER_SIZE = 256;
     public boolean VOICE_ENABLE = true;
+    private Integer PING_TIMEOUT;
 
     public ConnectionController(String userName, String serverIp, Integer serverPort, String serverRoom, String userPass) {
         this.userName = userName;
@@ -48,6 +49,7 @@ public class ConnectionController {
         this.serverPort = serverPort;
         this.serverRoom = serverRoom;
         this.serverPass = userPass;
+        this.PING_TIMEOUT = 3000;
     }
 
     public boolean connect() {
@@ -58,17 +60,22 @@ public class ConnectionController {
              * Creates a new socket with the server, also creates the output
              * streams and prepares the buffer *
              */
-            socket = new Socket(serverIp, this.serverPort);
-            outputStream = socket.getOutputStream();
-            outputStreamWriter = new OutputStreamWriter(outputStream);
-            bufferedWriter = new BufferedWriter(outputStreamWriter);
-            inputStream = socket.getInputStream();
-            inputStreamReader = new InputStreamReader(inputStream);
-            bufferedReader = new BufferedReader(inputStreamReader);
+            InetAddress address = InetAddress.getByName(serverIp);
+            if(address.isReachable(PING_TIMEOUT)){
+                socket = new Socket(serverIp, this.serverPort);
+                outputStream = socket.getOutputStream();
+                outputStreamWriter = new OutputStreamWriter(outputStream);
+                bufferedWriter = new BufferedWriter(outputStreamWriter);
+                inputStream = socket.getInputStream();
+                inputStreamReader = new InputStreamReader(inputStream);
+                bufferedReader = new BufferedReader(inputStreamReader);
 
-            //clientAuth = userName+"|"+Arrays.toString(userPass)+"|"+userRoom+"|"+this.getNetworkInterface();
-            clientAuth = userName + "|" + this.getNetworkInterface();
-            this.sendMessage("connect", clientAuth);
+                //clientAuth = userName+"|"+Arrays.toString(userPass)+"|"+userRoom+"|"+this.getNetworkInterface();
+                clientAuth = userName + "|" + this.getNetworkInterface();
+                this.sendMessage("connect", clientAuth);
+            }else{
+                throw new IOException();
+            }
         } catch (IOException ex) {
             Logger.getLogger(ConnectionController.class.getName()).log(Level.SEVERE, null, ex);
             return false;
